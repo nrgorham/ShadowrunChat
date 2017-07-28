@@ -1,0 +1,28 @@
+﻿body {
+}
+
+.topbox {
+    padding-bottom: 50px;
+}
+
+footer {
+    position: fixed;
+    left: 0px;
+    bottom: 0px;
+    height: 50px;
+    width: 100%;
+}
+
+li {
+    list-style-type: none;
+    padding: 2px;
+    margin: 2px;
+}
+
+.msgError {
+    color: red;
+}
+
+.msgSystem {
+    color: mediumaquamarine;
+}

@@ -1,0 +1,16 @@
+{
+  "name": "socket-example",
+  "version": "0.0.0",
+  "description": "SocketExample",
+  "main": "server.js",
+  "author": {
+    "name": "John"
+  },
+  "dependencies": {
+    "bootstrap": "^3.3.7",
+    "express": "^4.15.2",
+    "jquery": "^3.2.1",
+    "node-persist": "^2.0.11",
+    "socket.io": "^2.0.2"
+  }
+}
