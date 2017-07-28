@@ -18,9 +18,12 @@ Connect via your favorite web browser and you get a chat room. The results of va
 
 Chat commands are as follows:
 
-/nick <whatever> - Set your nickname. Will be persisted via html local storage and you'll attempt to reacquire the nickname on any reconnect.
-/roll <\d>d - Roll the specified number of dice. Reports the number of successes (5s and 6s). Reports glitch and critical glitch results appropriately.
-/init <\d>d+<\d> - Rolls the specified number of dice + a static modifier. 
+/nick [whatever] - Set your nickname. Will be persisted via html local storage and you'll attempt to reacquire the nickname on any reconnect.
+
+/roll [\d]d - Roll the specified number of dice. Reports the number of successes (5s and 6s). Reports glitch and critical glitch results appropriately.
+
+/init [\d]d+[\d] - Rolls the specified number of dice + a static modifier. 
+
 /speech [on|off] - Toggles text-to-speech or sets it explicitly to on or off.
 
 
