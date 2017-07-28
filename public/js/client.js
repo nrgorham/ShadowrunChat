@@ -3,6 +3,7 @@ var bSpeech = true;
 var zVoice;
 var voices = window.speechSynthesis.getVoices();
 var playerAliases = {};
+var vm;
 
 function DiceExpression(pool, modifier, limit) {
 
@@ -16,6 +17,11 @@ DiceExpression.prototype.toString = function DiceExpressionToString() {
     var ret = this.Pool + "d" + ((this.Modifier != 0) ? ("+" + this.Modifier) : "") + ((this.Limit != 0) ? ("[" + this.Limit + "]") : "");
     return ret;
 }
+/*
+DiceExpression.prototype.toJSON = function() {
+    return {__class__: "DiceExpression", Pool: this.Pool, Modifier: this.Modifier, Limit: this.Limit};
+}
+*/
 
 function DiceAlias(name, diceExpo) {
 
@@ -28,6 +34,12 @@ DiceAlias.prototype.toString = function () {
     var ret = this.Name + " - " + this.Dice.toString();
     return ret;
 }
+
+/*
+DiceAlias.prototype.toJSON = function() {
+    return {__class__: "DiceAlias", Name: this.Name, Dice: this.Dice};
+}
+*/
 
 function parseAlias(input) {
 
@@ -167,6 +179,32 @@ $(function () {
     //var bSpeech = true;
     //var zVoice = 0;
 
+    var restoreAliases = function(aliases) {
+        
+        //Vue.set(playerAliases, aliases);
+
+        var t = {};
+
+        for (k in aliases) {
+            //
+            t[k] = new DiceAlias(aliases[k].Name, new DiceExpression(aliases[k].Dice.Pool, aliases[k].Dice.Modifier, aliases[k].Dice.Limit));
+
+        }
+
+        vm.aliases = t;
+        //playerAliases = aliases;
+
+
+    };
+
+    var sendAliases = function() {
+        //I suspect this is what we want to not get the attached watchers from Vue?
+        //socket.emit('aliasesToServer', JSON.parse(JSON.stringify(playerAliases)));
+        //socket.emit('aliasesToServer', JSON.parse(JSON.stringify(vm.aliases)));
+        socket.emit('aliasesToServer', vm.aliases);
+    };
+
+
     var commandTestRx = /^\//;
     var chatVerbs = {
 
@@ -240,7 +278,8 @@ $(function () {
 
                     if (aliasCommand.status == "success") {
                         if (aliasCommand.command == "listAliases") {
-                            var keys = Object.keys(playerAliases);
+                            //var keys = Object.keys(playerAliases);
+                            var keys = Object.keys(vm.aliases);
 
                             if (keys.length == 0) {
                                 addMessage("You don't have any stored aliases.", "msgError", false);
@@ -249,7 +288,8 @@ $(function () {
                                 var output = "Aliases: ";
 
                                 for (var i = 0; i < keys.length; i++) {
-                                    output += playerAliases[keys[i]].toString() + " ";
+                                    //output += playerAliases[keys[i]].toString() + " ";
+                                    output += vm.aliases[keys[i]].toString() + " ";
                                 }
 
                                 addMessage(output, "msgSystem", false);
@@ -260,12 +300,27 @@ $(function () {
 
                         } else if (aliasCommand.command == "addAlias") {
 
-                            playerAliases[aliasCommand.alias] = new DiceAlias(aliasCommand.alias, aliasCommand.diceExpression);
+                            //playerAliases[aliasCommand.alias] = new DiceAlias(aliasCommand.alias, aliasCommand.diceExpression);
+                            //do to how Vue.js does stuff, we can't do this exactly
+                            var newDA = new DiceAlias(aliasCommand.alias, aliasCommand.diceExpression);
+
+                            Vue.set(vm.aliases, aliasCommand.alias, newDA);
+
+                            //Vue.set(playerAliases, aliasCommand.alias, newDA);
+                            //playerAliases[aliasCommand.alias] = newDA;
+                            //vm.playerAliases
+                            //inform the server
+                            sendAliases();
+
 
 
                         } else if (aliasCommand.command == "removeAlias") {
 
-                            delete playerAliases[aliasCommand.alias];
+                            //delete playerAliases[aliasCommand.alias];
+                            Vue.delete(vm.aliases, aliasCommand.alias);
+                            //inform the server
+                            sendAliases();
+
 
                         } else {
                             console.log("Unhandled error running the alias command." + msg);
@@ -346,12 +401,17 @@ $(function () {
         return false;
     });
 
+    socket.on('aliasesToClient', function(msg) {
+        restoreAliases(msg);
+    });
+
     socket.on('chat message', function (msg) {
         addMessage(msg, "msgSelf", false);
     });
 
     socket.on('nicknameChange', function (msg) {
         sessionStorage.nickname = msg;
+        vm.loggedIn = true;
     });
 
     socket.on('roll', function (msg) {
@@ -365,7 +425,13 @@ $(function () {
             grammarSuccess = "successes";
         }
 
-        var outputMsg = msg.actor + " rolled " + msg.successes + " " + grammarSuccess + " on " + msg.pool + " dice.";
+        var aliasString = "";
+
+        if (msg.alias !== undefined) {
+            aliasString = msg.alias + " and got ";
+        }
+
+        var outputMsg = msg.actor + " rolled " + aliasString + msg.successes + " " + grammarSuccess + " on " + msg.pool + " dice.";
 
 
         if (msg.glitchStatus == 2) {
@@ -409,5 +475,52 @@ $(function () {
     setInterval(function() {
         $('body').animate({ scrollTop: $("body").height() }, 500);
     }, 1000);
+
+    vm = new Vue({
+        el: '#alias',
+        template: `
+            <div v-if="loggedIn" id="alias">
+                <p>Aliases</p>
+                <ul>
+                    <template v-for="(a, key) in aliases">
+                        <li>
+                            <button v-on:click="test(key)">{{a.toString()}}</button>
+                        </li>
+                    </template>
+                </ul>
+                <div>
+                    <p>Alias commands</p>
+                    <ul>
+                    <li>/alias add Name #d[Limit]</li>
+                    <li>/alias remove Name</li>
+                    <li>/alias <span>List aliases</span></li>
+                    </ul>
+                </div>
+            </div>
+            `,
+        data: {
+            message: "Test?",
+            loggedIn: false,
+            aliases: playerAliases
+        }, 
+        methods: {
+            test: function(key) {
+                //alert("Hooray? " + this.aliases[key].toString())
+                var current = this.aliases[key];
+
+                var aliasRollMessage = {
+
+                    type: "aliasRollMessage",
+                    name: current.Name,
+                    dice: current.Dice
+
+                }
+
+                socket.emit('aliasRollMessage', aliasRollMessage)
+
+            }
+
+        }
+    })
 
 });

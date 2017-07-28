@@ -225,10 +225,12 @@ io.on('connection', function (socket) {
 
                 me = Users.getUser(msg);
 
+                socket.emit('aliasesToClient', me.Aliases);
+
             } else {
 
                 me = Users.addUser(msg);
-
+                socket.emit('aliasesToClient', me.Aliases);
             }
 
             console.log('Nickname change: ' + nickname + ' is now known as ' + msg);
@@ -333,6 +335,97 @@ io.on('connection', function (socket) {
         }
 
     });
+
+    socket.on('aliasRollMessage', function(msg) {
+        /*
+        We're getting an aliasRollMessage object which looks like this:
+        type: "aliasRollMessage",
+        name: string,
+        dice: DiceExpression {Pool (int), Modifier (int), Limit (int)}
+        */
+        console.log("Received aliasRollMessage from " + nickname)
+        try {
+
+            /*
+                I want to refactor all the message validation stuff out
+                We're going to stupidly assume everything's fine for now because
+                I want to get this ready for 2 hours from now
+
+            */
+
+            if (msg.type == "aliasRollMessage") {
+
+                var pool = msg.dice.Pool + msg.dice.Modifier;
+                var limit = msg.dice.Limit;
+                var explode = false;
+
+                if (pool > 200) {
+                    console.log("Some dickhead tried to roll " + pool + " dice.");
+                    throw ("Hey asshole, that's too many dice.");
+                }
+
+                var rollRequest = {
+                    zPool: pool,
+                    zLimit: limit,
+                    bPushTheLimit: explode,
+                    zEdge: 0
+                }
+
+                var histo = Roller.RollDice(rollRequest);
+
+                var successes = histo[4] + histo[5];
+                var ones = histo[0];
+
+                var count = 0;
+                for (var i = 0; i < histo.length; i++) {
+                    count += histo[i];
+                }
+
+                var glitchThreshold = Math.ceil(count / 2);
+                var glitch = ones >= glitchThreshold ? true : false;
+
+                var glitchStatus = 0;
+
+                if (glitch && successes == 0) {
+                    //Crit Glitch
+                    glitchStatus = 2;
+                } else if (glitch) {
+                    //Glitch
+                    glitchStatus = 1;
+                } else {
+                    //Fine
+                    glitchStatus = 0;
+                }
+
+                var outMessage = {
+                    actor: nickname,
+                    alias: msg.name,
+                    successes: successes,
+                    ones: ones,
+                    glitchStatus: glitchStatus,
+                    histogram: histo,
+                    pool: pool
+                };
+
+                console.log("Trying to emit" + outMessage);
+
+                io.emit("roll", outMessage);
+                io.emit("chat message", nickname + " rolled some dice.");
+                var mString = nickname + " rolled some dice.";
+                storeChat(mString);
+
+            } else {
+                throw "Bad aliasRollMessage? Type was: " + msg.type;
+            }
+
+        } catch (e) {
+            socket.emit('errors', "Error with alias roll: " + e);
+            console.log(nickname + " had an error: " + e);
+        }
+
+
+    });
+
     socket.on('initiative', function (msg) {
         try {
             var initRx = /^(\d+)\+(\d+)d6?$/
@@ -384,6 +477,21 @@ io.on('connection', function (socket) {
             console.log(nickname + " had an error: " + e);
         }
     });
+
+
+    socket.on('aliasesToServer', function (msg) {
+        /*
+            TODO: We should really, really be evaluating these to ensure everything is cool
+            but it's late, so I'm going to assume (stupidly) that data from the client is all cool
+        */
+
+        if (me !== undefined) {
+            me.Aliases = msg;
+            Users.SaveUsers();
+        }
+
+    });
+
 });
 
 http.listen(3000, function () {

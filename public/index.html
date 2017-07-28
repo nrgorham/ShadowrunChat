@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="/css/chat.css" />
     <!-- <link rel="stylesheet" href="/css/main.css" /> -->
 
+    <script src="/js/vue.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     <script src="/js/jquery.js" type="text/javascript"></script>
     <script src="/js/bootstrap.js" type="text/javascript"></script>
@@ -23,7 +24,11 @@
             <div class="page-header">
                 <h1>Shadowrun Chatroom and Roller</h1>
             </div>
-            <ul id="messages"></ul>
+            <div class="message-container">
+                <ul id="messages"></ul>
+            </div>
+            <div id="alias">
+            </div>
         </div>
 
         <footer class="text-center">

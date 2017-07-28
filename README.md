@@ -22,7 +22,7 @@ Chat commands are as follows:
 
 /roll [\d]d - Roll the specified number of dice. Reports the number of successes (5s and 6s). Reports glitch and critical glitch results appropriately.
 
-/init [\d]d+[\d] - Rolls the specified number of dice + a static modifier. 
+/init [\d]d[+\d] - Rolls the specified number of dice + a static modifier. 
 
 /speech [on|off] - Toggles text-to-speech or sets it explicitly to on or off.
 
