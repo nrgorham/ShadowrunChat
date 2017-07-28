@@ -12,7 +12,7 @@ storage.initSync();
 
 app.get('/', function (req, res) {
     //res.send('<h1>Hello world</h1>');
-    res.sendFile(__dirname + "/index.html");
+    res.sendFile(__dirname + "/public/index.html");
 });
 
 var chatLog = storage.getItemSync('chatLog');
