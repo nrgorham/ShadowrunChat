@@ -363,6 +363,10 @@ io.on('connection', function (socket) {
                     console.log("Some dickhead tried to roll " + pool + " dice.");
                     throw ("Hey asshole, that's too many dice.");
                 }
+                if (pool < 1) {
+                    console.log("You need dice to roll dice. " + pool + " dice is therefore insufficient.")
+                    throw ("Hey man, that's too few dice.");
+                }
 
                 var rollRequest = {
                     zPool: pool,

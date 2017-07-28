@@ -26,3 +26,17 @@ li {
 .msgSystem {
     color: mediumaquamarine;
 }
+
+.activeModifier {
+    border-color: red;
+    border-width: thick;
+}
+
+button {
+    padding: 1px 6px;
+}
+
+.aliasButton {
+    margin-left: 3px;
+    margin-right: 3px;
+}

@@ -1,5 +1,5 @@
 
-var bSpeech = true;
+var bSpeech = false;
 var zVoice;
 var voices = window.speechSynthesis.getVoices();
 var playerAliases = {};
@@ -483,11 +483,17 @@ $(function () {
                 <p>Aliases</p>
                 <ul>
                     <template v-for="(a, key) in aliases">
-                        <li>
-                            <button v-on:click="test(key)">{{a.toString()}}</button>
-                        </li>
+                        <span>
+                            <button class="aliasButton" v-on:click="rollAlias(key)">{{a.toString()}}</button>
+                        </span>
                     </template>
                 </ul>
+                <div>
+                    <p>Current alias modifier: {{modifier}}</p>
+                    <template v-for="i in (maxModifier*2+1)">
+                        <button v-on:click="setModifier(i-1)" :class="[modifier==((i-1)-maxModifier)? 'activeModifier' :'']">{{(i-1)-maxModifier}}</button>
+                    </template>
+                </div>
                 <div>
                     <p>Alias commands</p>
                     <ul>
@@ -501,10 +507,12 @@ $(function () {
         data: {
             message: "Test?",
             loggedIn: false,
+            modifier: 0,
+            maxModifier: 15,
             aliases: playerAliases
         }, 
         methods: {
-            test: function(key) {
+            rollAlias: function(key) {
                 //alert("Hooray? " + this.aliases[key].toString())
                 var current = this.aliases[key];
 
@@ -512,12 +520,16 @@ $(function () {
 
                     type: "aliasRollMessage",
                     name: current.Name,
-                    dice: current.Dice
+                    dice: new DiceExpression(current.Dice.Pool, current.Dice.Modifier + this.modifier, current.Dice.Limit)
+                    
 
                 }
 
                 socket.emit('aliasRollMessage', aliasRollMessage)
 
+            },
+            setModifier: function(key) {
+                this.modifier = key-this.maxModifier;
             }
 
         }
